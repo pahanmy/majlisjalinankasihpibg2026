@@ -1,845 +1,525 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { User, School, Plus, Trash2, CheckCircle, Calendar, Clock, MapPin, DollarSign, Users, ChevronDown, Briefcase, List, XCircle, Phone, Star, Copy, CreditCard, MessageCircle, AlertCircle, Hourglass, Gift, AlertTriangle } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Majlis Jalinan Kasih PIBG Miri 2026</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-// --- Firebase Configuration & Initialization ---
-// Konfigurasi Khas untuk projek 'jalinankasih-26624'
-const firebaseConfig = {
-  apiKey: "AIzaSyBIm-osCUz7axIBCvz77JLyvzmRSGBahoo",
-  authDomain: "jalinankasih-26624.firebaseapp.com",
-  projectId: "jalinankasih-26624",
-  storageBucket: "jalinankasih-26624.firebasestorage.app",
-  messagingSenderId: "656439611876",
-  appId: "1:656439611876:web:8da176755e3d59ee3177f1"
-};
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-// Gunakan ID app persekitaran jika ada, atau fallback kepada default
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'jalinankasih-web';
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-serif { font-family: 'Playfair Display', serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #171717; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #404040; border-radius: 3px; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100">
+    <div id="root"></div>
 
-// --- Data: Senarai Sekolah Daerah Miri ---
-const SCHOOL_LIST = [
-  "KOLEJ TUN DATU TUANKU HJ BUJANG",
-  "KOLEJ VOKASIONAL MIRI",
-  "SJK (CINA) CHIAW NAN",
-  "SJK (CINA) CHUNG HUA BAKAM",
-  "SJK (CINA) CHUNG HUA KROKOP",
-  "SJK (CINA) CHUNG HUA LUTONG",
-  "SJK (CINA) CHUNG HUA MIRI",
-  "SJK (CINA) CHUNG HUA PUJUT",
-  "SJK (CINA) CHUNG HUA TUDAN",
-  "SJK (CINA) CHUNG SAN",
-  "SJK (CINA) HUA KWONG",
-  "SJK (CINA) NORTH",
-  "SJK (CINA) TUKAU",
-  "SK AGAMA",
-  "SK ANCHI",
-  "SK BELURU CENTRAL",
-  "SK JALAN BINTANG",
-  "SK KG. BAKAM",
-  "SK KG. BERAYA",
-  "SK KG. LUAK",
-  "SK KUALA BARAM",
-  "SK KUALA BARAM II",
-  "SK LAMBIR VILLAGE",
-  "SK LEPONG AJAI",
-  "SK LUTONG",
-  "SK MERBAU",
-  "SK MIRI",
-  "SK PENDIDIKAN KHAS MIRI",
-  "SK PUJUT CORNER",
-  "SK PULAU MELAYU",
-  "SK RIAM BATU 2",
-  "SK SAYED OTHMAN",
-  "SK SENADIN",
-  "SK SG. BAKAS",
-  "SK SG. BIAR",
-  "SK SG. BURI",
-  "SK SG. ENTULANG",
-  "SK SG. KELABIT",
-  "SK SG. LAONG",
-  "SK SG. LIAM",
-  "SK SG. SELEPIN",
-  "SK SG. SEPUTI",
-  "SK SOUTH",
-  "SK ST COLUMBA",
-  "SK ST JOSEPH",
-  "SK TEMENGGONG DATUK MUIP",
-  "SK TUDAN",
-  "SK TUDAN JAYA",
-  "SM SAINS MIRI",
-  "SMK AGAMA",
-  "SMK BARU",
-  "SMK CHUNG HUA",
-  "SMK DATO PERMAISURI",
-  "SMK LOPENG TENGAH",
-  "SMK LUAK",
-  "SMK LUTONG",
-  "SMK MERBAU",
-  "SMK PUJUT",
-  "SMK RIAM",
-  "SMK ST. COLUMBA",
-  "SMK ST. JOSEPH",
-  "SMK TAMAN TUNKU"
-].sort();
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- Data: Senarai Jawatan ---
-const POSITION_LIST = [
-  "YDP",
-  "NYDP",
-  "Setiausaha",
-  "Naib Setiausaha",
-  "Bendahari",
-  "Naib Bendahari",
-  "EXCO",
-  "KSIB",
-  "Penasihat / Guru Besar", 
-  "Lain-lain"
-];
+        const { useState, useEffect, useMemo } = React;
 
-export default function MiriDinnerRSVP() {
-  const [user, setUser] = useState(null);
-  const [schoolName, setSchoolName] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [daysLeft, setDaysLeft] = useState(0); // Countdown state
-  
-  // Initialize with 10 empty objects for name and position
-  const [attendees, setAttendees] = useState(
-    Array(10).fill(null).map(() => ({ name: '', position: '' }))
-  );
-  
-  const [registeredSchools, setRegisteredSchools] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  
-  // State for Status Board Tab
-  const [statusTab, setStatusTab] = useState('filled');
+        // --- Firebase Config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIm-osCUz7axIBCvz77JLyvzmRSGBahoo",
+            authDomain: "jalinankasih-26624.firebaseapp.com",
+            projectId: "jalinankasih-26624",
+            storageBucket: "jalinankasih-26624.firebasestorage.app",
+            messagingSenderId: "656439611876",
+            appId: "1:656439611876:web:8da176755e3d59ee3177f1"
+        };
 
-  // 1. Authentication
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // Cuba log masuk menggunakan token khas persekitaran dahulu (jika ada)
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-           try {
-             await signInWithCustomToken(auth, __initial_auth_token);
-           } catch (e) {
-             // Jika gagal (sebab projek berbeza), fallback ke anonymous
-             console.warn("Custom token failed (expected for custom config), using anonymous auth:", e);
-             await signInAnonymously(auth);
-           }
-        } else {
-          await signInAnonymously(auth);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'jalinankasih-web'; // Fixed App ID for this standalone version
+
+        // --- Icons Component (SVG replacements for Lucide) ---
+        const Icon = ({ name, className }) => {
+            const icons = {
+                User: <><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+                School: <><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></>,
+                Plus: <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+                Trash2: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>,
+                CheckCircle: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+                Calendar: <><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>,
+                Clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+                MapPin: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>,
+                DollarSign: <><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
+                Users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+                ChevronDown: <path d="m6 9 6 6 6-6"/>,
+                Briefcase: <><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>,
+                XCircle: <><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></>,
+                Phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>,
+                Star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+                Copy: <><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>,
+                CreditCard: <><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>,
+                MessageCircle: <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/>,
+                AlertCircle: <><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>,
+                Hourglass: <><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></>,
+                Gift: <><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.9 4.9 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></>,
+                AlertTriangle: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>
+            };
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    {icons[name] || null}
+                </svg>
+            );
+        };
+
+        // --- Data ---
+        const SCHOOL_LIST = [
+            "KOLEJ TUN DATU TUANKU HJ BUJANG",
+            "KOLEJ VOKASIONAL MIRI",
+            "SJK (CINA) CHIAW NAN",
+            "SJK (CINA) CHUNG HUA BAKAM",
+            "SJK (CINA) CHUNG HUA KROKOP",
+            "SJK (CINA) CHUNG HUA LUTONG",
+            "SJK (CINA) CHUNG HUA MIRI",
+            "SJK (CINA) CHUNG HUA PUJUT",
+            "SJK (CINA) CHUNG HUA TUDAN",
+            "SJK (CINA) CHUNG SAN",
+            "SJK (CINA) HUA KWONG",
+            "SJK (CINA) NORTH",
+            "SJK (CINA) TUKAU",
+            "SK AGAMA",
+            "SK ANCHI",
+            "SK BELURU CENTRAL",
+            "SK JALAN BINTANG",
+            "SK KG. BAKAM",
+            "SK KG. BERAYA",
+            "SK KG. LUAK",
+            "SK KUALA BARAM",
+            "SK KUALA BARAM II",
+            "SK LAMBIR VILLAGE",
+            "SK LEPONG AJAI",
+            "SK LUTONG",
+            "SK MERBAU",
+            "SK MIRI",
+            "SK PENDIDIKAN KHAS MIRI",
+            "SK PUJUT CORNER",
+            "SK PULAU MELAYU",
+            "SK RIAM BATU 2",
+            "SK SAYED OTHMAN",
+            "SK SENADIN",
+            "SK SG. BAKAS",
+            "SK SG. BIAR",
+            "SK SG. BURI",
+            "SK SG. ENTULANG",
+            "SK SG. KELABIT",
+            "SK SG. LAONG",
+            "SK SG. LIAM",
+            "SK SG. SELEPIN",
+            "SK SG. SEPUTI",
+            "SK SOUTH",
+            "SK ST COLUMBA",
+            "SK ST JOSEPH",
+            "SK TEMENGGONG DATUK MUIP",
+            "SK TUDAN",
+            "SK TUDAN JAYA",
+            "SM SAINS MIRI",
+            "SMK AGAMA",
+            "SMK BARU",
+            "SMK CHUNG HUA",
+            "SMK DATO PERMAISURI",
+            "SMK LOPENG TENGAH",
+            "SMK LUAK",
+            "SMK LUTONG",
+            "SMK MERBAU",
+            "SMK PUJUT",
+            "SMK RIAM",
+            "SMK ST. COLUMBA",
+            "SMK ST. JOSEPH",
+            "SMK TAMAN TUNKU"
+        ].sort();
+
+        const POSITION_LIST = [
+            "YDP", "NYDP", "Setiausaha", "Naib Setiausaha", "Bendahari", "Naib Bendahari", "EXCO", "KSIB", "Penasihat / Guru Besar", "Lain-lain"
+        ];
+
+        // --- Main Component ---
+        function MiriDinnerRSVP() {
+            const [user, setUser] = useState(null);
+            const [schoolName, setSchoolName] = useState('');
+            const [contactName, setContactName] = useState('');
+            const [contactNumber, setContactNumber] = useState('');
+            const [copied, setCopied] = useState(false);
+            const [daysLeft, setDaysLeft] = useState(0); 
+            
+            const [attendees, setAttendees] = useState(
+                Array(10).fill(null).map(() => ({ name: '', position: '' }))
+            );
+            
+            const [registeredSchools, setRegisteredSchools] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [success, setSuccess] = useState(false);
+            const [error, setError] = useState('');
+            const [statusTab, setStatusTab] = useState('filled');
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (err) {
+                        console.error("Auth error:", err);
+                    }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'miri_dinner_rsvps'));
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    data.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    setRegisteredSchools(data);
+                }, (err) => {
+                    console.error("Error fetching data:", err);
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            useEffect(() => {
+                const calculateTimeLeft = () => {
+                    const deadline = new Date("2026-01-31T23:59:59");
+                    const now = new Date();
+                    const difference = deadline - now;
+                    if (difference > 0) {
+                        setDaysLeft(Math.ceil(difference / (1000 * 60 * 60 * 24)));
+                    } else {
+                        setDaysLeft(0);
+                    }
+                };
+                calculateTimeLeft();
+                const timer = setInterval(calculateTimeLeft, 60000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const availableSchools = useMemo(() => {
+                const registeredNames = new Set(registeredSchools.map(r => r.schoolName));
+                return SCHOOL_LIST.filter(school => !registeredNames.has(school));
+            }, [registeredSchools]);
+
+            const handleAddAttendee = () => setAttendees([...attendees, { name: '', position: '' }]);
+            
+            const handleDataChange = (index, field, value) => {
+                const newAttendees = [...attendees];
+                const val = field === 'name' ? value.toUpperCase() : value;
+                newAttendees[index] = { ...newAttendees[index], [field]: val };
+                setAttendees(newAttendees);
+            };
+
+            const calculateValidAttendees = () => attendees.filter(p => p.name.trim() !== '');
+            const calculateTotal = () => calculateValidAttendees().length * 100;
+
+            const handleCopyBank = () => {
+                navigator.clipboard.writeText('1102263680');
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+
+                if (!schoolName.trim()) { setError('Sila pilih nama sekolah.'); setLoading(false); return; }
+                if (!contactName.trim() || !contactNumber.trim()) { setError('Sila lengkapkan maklumat Pegawai Perhubungan (PIC).'); setLoading(false); return; }
+                
+                const validAttendees = calculateValidAttendees();
+                if (validAttendees.length < 3) { setError('Minimum kehadiran adalah 3 orang.'); setLoading(false); return; }
+                if (validAttendees.some(p => !p.position)) { setError('Sila pilih jawatan untuk setiap peserta yang hadir.'); setLoading(false); return; }
+
+                try {
+                    const submittedSchoolName = schoolName.trim();
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'miri_dinner_rsvps'), {
+                        schoolName: submittedSchoolName,
+                        contactName: contactName.trim().toUpperCase(),
+                        contactNumber: contactNumber.trim(),
+                        attendees: validAttendees,
+                        totalAmount: validAttendees.length * 100,
+                        timestamp: serverTimestamp(),
+                        userId: user.uid
+                    });
+                    setSuccess(true);
+                } catch (err) {
+                    console.error("Error submitting:", err);
+                    setError('Ralat semasa menghantar. Sila cuba lagi.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleReset = () => {
+                setSuccess(false); setSchoolName(''); setContactName(''); setContactNumber('');
+                setAttendees(Array(10).fill(null).map(() => ({ name: '', position: '' })));
+            };
+
+            return (
+                <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-white selection:text-black pb-12">
+                    {/* Header */}
+                    <div className="relative overflow-hidden bg-white text-black py-20 px-6 text-center shadow-2xl">
+                        <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
+                            <div className="absolute top-[-50%] left-[-20%] w-[80%] h-[80%] rounded-full bg-gradient-to-r from-yellow-200/50 to-yellow-500/30 blur-3xl"></div>
+                            <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-100/50 blur-3xl"></div>
+                        </div>
+
+                        <div className="relative z-20 mb-8 inline-block animate-fade-in-down">
+                            <div className="bg-neutral-900 text-white px-6 py-2 rounded-full shadow-xl flex items-center gap-3 border border-neutral-700">
+                                <div className="bg-red-500 rounded-full p-1 animate-pulse">
+                                    <Icon name="Hourglass" className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="text-sm font-bold tracking-wide uppercase">Tarikh Tutup: <span className="text-yellow-400">31 JAN 2026</span></span>
+                                <div className="w-px h-4 bg-neutral-700"></div>
+                                <span className="text-sm font-mono text-red-300 font-bold">{daysLeft > 0 ? `${daysLeft} Hari Lagi` : 'Tamat Tempoh'}</span>
+                            </div>
+                        </div>
+
+                        <div className="max-w-5xl mx-auto relative z-10">
+                            <h2 className="text-sm font-bold tracking-[0.4em] uppercase text-neutral-500 border-b border-neutral-300 pb-2 inline-block mb-6">Jemputan Rasmi</h2>
+                            <h1 className="text-5xl md:text-7xl font-serif font-bold mb-4 tracking-tight text-neutral-900 leading-tight drop-shadow-sm">MAJLIS JALINAN KASIH<br/><span className="text-4xl md:text-5xl text-neutral-800">PIBG DAERAH MIRI 2026</span></h1>
+                            <div className="mb-6 animate-fade-in-up">
+                                <div className="inline-flex items-center gap-2 py-3 px-8 rounded-full bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white shadow-xl border border-neutral-700 transform hover:scale-105 transition duration-300">
+                                    <Icon name="Star" className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                    <span className="text-lg md:text-xl font-medium tracking-wide italic">"Muafakat PIBG, Kekuatan Pendidikan"</span>
+                                    <Icon name="Star" className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                </div>
+                            </div>
+                            <p className="max-w-2xl mx-auto text-neutral-600 italic mb-10 font-serif text-lg leading-relaxed">"Besar harapan kami agar setiap pihak dapat hadir sebagai tanda sokongan yang tidak berbelah bahagi kepada usaha murni ini."</p>
+                            
+                            <div className="mb-12 relative bg-white/60 backdrop-blur-md p-8 rounded-2xl border border-white/50 inline-block w-full max-w-2xl mx-auto shadow-lg">
+                                <span className="block text-xs font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3">Disempurnakan Oleh</span>
+                                <p className="text-2xl md:text-4xl font-serif font-bold text-neutral-900 mb-1">Puan Mariam Haji Monek</p>
+                                <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto my-3"></div>
+                                <p className="text-sm text-neutral-700 font-semibold uppercase tracking-widest">Pegawai Pendidikan Daerah<br/>Pejabat Pendidikan Daerah Miri</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto text-sm md:text-base font-medium text-neutral-700">
+                                <div className="flex flex-col items-center p-4 bg-white/50 rounded-lg border border-neutral-100 shadow-sm hover:shadow-md transition"><Icon name="Calendar" className="w-6 h-6 mb-2 text-neutral-900" /><span className="font-bold">13 Februari (Jumaat)</span></div>
+                                <div className="flex flex-col items-center p-4 bg-white/50 rounded-lg border border-neutral-100 shadow-sm hover:shadow-md transition"><Icon name="Clock" className="w-6 h-6 mb-2 text-neutral-900" /><span className="font-bold">7.00 PM - 10.00 PM</span></div>
+                                <div className="flex flex-col items-center p-4 bg-white/50 rounded-lg border border-neutral-100 shadow-sm hover:shadow-md transition"><Icon name="MapPin" className="w-6 h-6 mb-2 text-neutral-900" /><span className="font-bold">Imperial Palace Hotel</span></div>
+                            </div>
+
+                            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
+                                <div className="p-6 bg-neutral-900 text-white rounded-2xl shadow-xl border border-neutral-800 flex items-start gap-4">
+                                    <div className="bg-white text-black p-3 rounded-full shrink-0"><Icon name="User" className="w-6 h-6" /></div>
+                                    <div>
+                                        <h4 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-1">Tema Pakaian</h4>
+                                        <p className="text-xl font-serif font-bold mb-2">Hitam & Putih</p>
+                                        <p className="text-xs text-neutral-400 leading-relaxed">Menampilkan kesatuan dan keanggunan dalam kesederhanaan.</p>
+                                    </div>
+                                </div>
+                                <div className="p-6 bg-gradient-to-br from-yellow-500 to-amber-600 text-black rounded-2xl shadow-xl flex items-start gap-4 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 transform group-hover:scale-110 transition"><Icon name="Gift" className="w-24 h-24" /></div>
+                                    <div className="bg-black/10 p-3 rounded-full shrink-0 z-10"><Icon name="Gift" className="w-6 h-6 text-white" /></div>
+                                    <div className="z-10">
+                                        <h4 className="text-sm font-bold uppercase tracking-widest text-black/60 mb-1">Aktiviti Khas YDP</h4>
+                                        <p className="text-xl font-serif font-bold mb-2 text-white">Pertukaran Hadiah</p>
+                                        <p className="text-xs font-medium text-black/80 leading-relaxed mb-1"><span className="font-bold">Syarat:</span> Bawa hadiah bernilai min. <span className="font-bold text-white bg-black/20 px-1 rounded">RM30.00</span></p>
+                                        <p className="text-[10px] text-white/90 italic leading-tight mt-2">*Bertujuan untuk mengeratkan silaturrahim dan ukhwah sesama kepimpinan PIBG sekolah-sekolah Daerah Miri.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                        {/* FORM */}
+                        <div className="lg:col-span-7">
+                            <div className="bg-neutral-900 border border-neutral-800 p-6 md:p-10 rounded-2xl shadow-2xl ring-1 ring-white/5">
+                                <div className="flex items-center gap-4 mb-8 border-b border-neutral-800 pb-6">
+                                    <div className="bg-white text-black p-3 rounded-xl shadow-lg shadow-white/10"><Icon name="School" className="w-8 h-8" /></div>
+                                    <div><h3 className="text-2xl font-bold text-white">Pendaftaran Sekolah</h3><p className="text-neutral-400 text-sm">Sila isi maklumat kehadiran dengan lengkap.</p></div>
+                                </div>
+
+                                {success ? (
+                                    <div className="bg-green-900/20 border border-green-500/30 p-8 rounded-xl text-center animate-fade-in">
+                                        <div className="inline-flex items-center justify-center w-20 h-20 bg-green-900/30 rounded-full mb-6 ring-1 ring-green-500/50"><Icon name="CheckCircle" className="w-10 h-10 text-green-400" /></div>
+                                        <h4 className="text-2xl font-bold text-white mb-2">Pendaftaran Berjaya!</h4>
+                                        <p className="text-neutral-300 mb-8">Terima kasih. Nama sekolah anda telah dimasukkan ke dalam senarai kehadiran rasmi.</p>
+                                        <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 text-left mb-8 relative overflow-hidden">
+                                            <div className="absolute right-0 top-0 p-4 opacity-5"><Icon name="MessageCircle" className="w-32 h-32 text-green-500" /></div>
+                                            <h5 className="font-bold text-yellow-400 mb-3 flex items-center gap-2 text-lg relative z-10"><Icon name="AlertCircle" className="w-5 h-5" /> Tindakan Seterusnya</h5>
+                                            <p className="text-sm text-neutral-300 mb-5 relative z-10 leading-relaxed">Sila buat pembayaran ke akaun <strong>PPD CLUB (1102263680)</strong> dan <strong>WAJIB</strong> hantar resit kepada Encik Aizudin untuk pengesahan tempat.</p>
+                                            <a href={`https://wa.me/60109759190?text=Salam%20Encik%20Aizudin,%20berikut%20adalah%20resit%20pembayaran%20untuk%20${encodeURIComponent(schoolName)}%20bagi%20Majlis%20Jalinan%20Kasih%20PIBG.`} target="_blank" rel="noreferrer" className="relative z-10 block w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-center flex items-center justify-center gap-3 transition shadow-lg hover:shadow-green-500/20 group">
+                                                <Icon name="MessageCircle" className="w-6 h-6 fill-current" /><span>Hantar Resit Sekarang (WhatsApp)</span>
+                                            </a>
+                                            <p className="text-[10px] text-center mt-3 text-neutral-500">Pautan ini akan membuka WhatsApp Encik Aizudin secara terus.</p>
+                                        </div>
+                                        <button onClick={handleReset} className="px-8 py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition shadow-lg shadow-white/5">Daftar Sekolah Lain</button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleSubmit} className="space-y-8">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-neutral-400 ml-1">Nama Sekolah</label>
+                                            <div className="relative group">
+                                                <select value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-white focus:ring-1 focus:ring-white outline-none transition appearance-none cursor-pointer group-hover:border-neutral-600 shadow-inner">
+                                                    <option value="" className="bg-neutral-900 text-white">-- Sila Pilih Sekolah --</option>
+                                                    {availableSchools.map((school) => (<option key={school} value={school} className="bg-neutral-900 text-white">{school}</option>))}
+                                                </select>
+                                                <Icon name="ChevronDown" className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400 pointer-events-none group-hover:text-white transition" />
+                                            </div>
+                                            {availableSchools.length === 0 && (<p className="text-xs text-yellow-500 mt-2 flex items-center gap-1"><Icon name="CheckCircle" className="w-3 h-3"/> Semua sekolah telah mendaftar.</p>)}
+                                        </div>
+
+                                        <div className="bg-neutral-950/50 p-6 rounded-xl border border-neutral-800/50 space-y-4">
+                                            <div className="flex items-center gap-2 pb-2 border-b border-neutral-800/50"><Icon name="Phone" className="w-4 h-4 text-neutral-400" /><label className="text-xs font-bold uppercase tracking-wider text-neutral-400">Maklumat Pegawai Perhubungan (PIC)</label></div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-1"><label className="text-[10px] uppercase text-neutral-500 ml-1">Nama PIC</label><input type="text" value={contactName} onChange={(e) => setContactName(e.target.value.toUpperCase())} placeholder="NAMA PENUH (HURUF BESAR)" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-white outline-none text-sm placeholder-neutral-600 uppercase focus:bg-neutral-800 transition" /></div>
+                                                <div className="space-y-1"><label className="text-[10px] uppercase text-neutral-500 ml-1">No. Telefon</label><input type="tel" value={contactNumber} onChange={(e) => setContactNumber(e.target.value)} placeholder="Cth: 0123456789" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-white outline-none text-sm placeholder-neutral-600 focus:bg-neutral-800 transition" /></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-end"><label className="text-xs font-bold uppercase tracking-wider text-neutral-400 ml-1">Senarai Peserta</label><div className="flex items-center gap-2 text-xs bg-neutral-800 px-3 py-1 rounded-full border border-neutral-700"><span className="text-neutral-400">Syarat:</span><span className="text-white font-bold">Min. 3 Orang</span><span className="text-neutral-600">|</span><span className="text-white font-bold">RM100/pax</span></div></div>
+                                            <div className="space-y-3">
+                                                {attendees.map((person, index) => (
+                                                    <div key={index} className="flex flex-col sm:flex-row gap-3 p-4 bg-neutral-950 border border-neutral-800 rounded-xl hover:border-neutral-700 transition group">
+                                                        <span className="flex items-center justify-center w-6 h-6 bg-neutral-900 rounded-full text-neutral-500 font-mono text-xs shrink-0 border border-neutral-800 group-hover:border-neutral-600 group-hover:text-neutral-300 transition">{index + 1}</span>
+                                                        <div className="flex-1"><input type="text" value={person.name} onChange={(e) => handleDataChange(index, 'name', e.target.value)} placeholder="NAMA PENUH PESERTA" className="w-full bg-transparent border-b border-neutral-800 p-1 text-white focus:border-white outline-none text-sm placeholder-neutral-700 uppercase transition" /></div>
+                                                        <div className="w-full sm:w-48 relative">
+                                                            <select value={person.position} onChange={(e) => handleDataChange(index, 'position', e.target.value)} className={`w-full bg-neutral-900/50 border border-neutral-800 rounded-lg p-2 pl-3 focus:border-white outline-none text-xs appearance-none cursor-pointer ${person.position ? 'text-white' : 'text-neutral-500'}`}>
+                                                                <option value="" className="bg-neutral-900 text-white">Pilih Jawatan...</option>
+                                                                {POSITION_LIST.map(pos => (<option key={pos} value={pos} className="bg-neutral-900 text-white">{pos}</option>))}
+                                                            </select>
+                                                            <Icon name="ChevronDown" className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-500 pointer-events-none" />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button type="button" onClick={handleAddAttendee} className="mt-2 w-full py-3 border border-dashed border-neutral-700 text-neutral-400 hover:text-white hover:border-white hover:bg-neutral-800 rounded-xl transition flex items-center justify-center gap-2 text-sm font-medium"><Icon name="Plus" className="w-4 h-4" /> Tambah Slot Peserta</button>
+                                        </div>
+
+                                        <div className="pt-8 border-t border-neutral-800">
+                                            <div className="flex justify-between items-center mb-6 bg-neutral-950 p-6 rounded-xl border border-neutral-800"><span className="text-neutral-400 font-medium">Jumlah Bayaran Perlu</span><div className="text-right"><p className="text-3xl font-bold text-white tracking-tight">RM {calculateTotal()}</p><p className="text-xs text-neutral-500 mt-1 font-mono">{calculateValidAttendees().length} orang x RM100.00</p></div></div>
+                                            
+                                            <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-xl mb-8 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="CreditCard" className="w-24 h-24 text-white" /></div>
+                                                <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-400 mb-5 flex items-center gap-2 relative z-10"><Icon name="DollarSign" className="w-4 h-4 text-yellow-500" /> Maklumat Pembayaran</h4>
+                                                <div className="grid grid-cols-1 gap-4 text-sm relative z-10">
+                                                    <div className="flex justify-between items-center border-b border-neutral-800 pb-3 border-dashed"><span className="text-neutral-500">Bank</span><span className="text-white font-medium uppercase font-mono tracking-wide">BANK KERJASAMA RAKYAT</span></div>
+                                                    <div className="flex justify-between items-center border-b border-neutral-800 pb-3 border-dashed"><span className="text-neutral-500">Nama Akaun</span><span className="text-white font-bold uppercase tracking-wider">PPD CLUB</span></div>
+                                                    <div className="flex justify-between items-center border-b border-neutral-800 pb-3 border-dashed"><span className="text-neutral-500">Jenis Akaun</span><span className="text-white font-medium uppercase text-xs bg-neutral-800 px-2 py-1 rounded">AKAUN SEMASA</span></div>
+                                                    <div className="flex justify-between items-center pt-2"><span className="text-neutral-500">No. Akaun</span><div className="flex items-center gap-3"><span className="text-xl md:text-2xl font-mono font-bold text-yellow-400 tracking-wider">1102263680</span><button type="button" onClick={handleCopyBank} className="flex items-center gap-1 text-[10px] bg-neutral-800 hover:bg-white hover:text-black text-neutral-300 px-3 py-1.5 rounded transition uppercase font-bold tracking-wider">{copied ? <Icon name="CheckCircle" className="w-3 h-3" /> : <Icon name="Copy" className="w-3 h-3" />}{copied ? 'Disalin' : 'Salin'}</button></div></div>
+                                                </div>
+                                                <div className="mt-5 p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-200 flex gap-3 items-start"><div className="shrink-0 mt-0.5 bg-blue-500/20 p-1 rounded-full"><div className="w-1 h-1 bg-blue-400 rounded-full"></div></div><p className="leading-relaxed">Sila buat pembayaran ke akaun di atas. Simpan resit transaksi anda sebagai bukti pembayaran untuk rujukan pihak penganjur kelak.</p></div>
+                                            </div>
+
+                                            <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-xl mb-8 flex gap-3 text-left">
+                                                <Icon name="AlertTriangle" className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                                                <div><h5 className="font-bold text-yellow-500 text-sm mb-1 uppercase tracking-wider">Peringatan Penting</h5><p className="text-xs text-yellow-200/70 leading-relaxed">Bayaran penyertaan hendaklah menggunakan <strong>duit peribadi (duit masing-masing)</strong>. Pihak penganjur <strong>TIDAK MENGGALAKKAN</strong> penggunaan duit tabung PIBG sekolah untuk tujuan ini.</p></div>
+                                            </div>
+
+                                            {error && (<div className="mb-6 bg-red-900/20 border border-red-900/50 p-4 rounded-lg flex items-center gap-3 text-red-400 text-sm"><Icon name="XCircle" className="w-5 h-5 shrink-0" />{error}</div>)}
+                                            <button type="submit" disabled={loading} className="w-full bg-white text-black font-bold py-5 rounded-xl hover:bg-neutral-200 transition transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]">{loading ? (<>Sedang Memproses...</>) : (<>SAHKAN KEHADIRAN & HANTAR <Icon name="CheckCircle" className="w-5 h-5" /></>)}</button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* STATUS BOARD */}
+                        <div className="lg:col-span-5 flex flex-col h-full min-h-[600px]">
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl flex-1 overflow-hidden flex flex-col ring-1 ring-white/5">
+                                <div className="p-6 pb-0 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur z-10 sticky top-0">
+                                    <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-neutral-800 rounded-lg"><Icon name="Users" className="w-5 h-5 text-white" /></div><div><h3 className="text-lg font-bold text-white">Status Terkini</h3><p className="text-xs text-neutral-500">Kemaskini Langsung (Real-time)</p></div></div>
+                                    <div className="flex p-1 bg-neutral-950 rounded-lg mb-6 border border-neutral-800">
+                                        <button onClick={() => setStatusTab('filled')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${statusTab === 'filled' ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>Sudah Isi <span className="ml-1 opacity-60">({registeredSchools.length})</span></button>
+                                        <button onClick={() => setStatusTab('unfilled')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${statusTab === 'unfilled' ? 'bg-red-900/20 text-red-400 shadow-sm border border-red-900/30' : 'text-neutral-500 hover:text-neutral-300'}`}>Belum Isi <span className="ml-1 opacity-60">({availableSchools.length})</span></button>
+                                    </div>
+                                </div>
+
+                                <div className="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar bg-neutral-900">
+                                    {statusTab === 'filled' && (
+                                        registeredSchools.length === 0 ? (
+                                            <div className="h-full flex flex-col items-center justify-center text-neutral-600 space-y-4 opacity-60"><Icon name="School" className="w-16 h-16 stroke-1" /><div className="text-center"><p className="font-medium">Belum ada sekolah mendaftar.</p><p className="text-xs mt-1">Jadilah yang pertama!</p></div></div>
+                                        ) : (
+                                            registeredSchools.map((school) => (
+                                                <div key={school.id} className="bg-neutral-950 border border-neutral-800 p-5 rounded-xl hover:border-neutral-600 transition group animate-fade-in-up shadow-sm">
+                                                    <div className="flex justify-between items-start mb-3"><h4 className="font-bold text-base text-white group-hover:text-blue-300 transition leading-tight w-[70%]">{school.schoolName}</h4><span className="bg-neutral-800 text-white border border-neutral-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm">{school.attendees.length} Pax</span></div>
+                                                    <div className="mb-4 text-[10px] text-neutral-400 flex items-center gap-2 bg-neutral-900/50 p-2 rounded border border-neutral-800/50"><Icon name="Phone" className="w-3 h-3 text-neutral-500" /><span className="uppercase tracking-wide font-medium">{school.contactName} <span className="text-neutral-600">|</span> {school.contactNumber}</span></div>
+                                                    <div className="space-y-2 pl-3 border-l border-neutral-800 ml-1">
+                                                        {school.attendees.map((person, idx) => (
+                                                            <div key={idx} className="flex items-start justify-between text-xs group/item">
+                                                                <span className="flex items-center gap-2 text-neutral-300 uppercase w-[65%] truncate"><span className="w-1 h-1 bg-neutral-600 rounded-full shrink-0 group-hover/item:bg-white transition"></span>{person.name || person}</span>
+                                                                <span className="text-[10px] text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800 w-[30%] text-right truncate">{person.position || 'Peserta'}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="mt-4 pt-3 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-500 font-mono"><span>Total: RM{school.totalAmount}</span><span>{school.timestamp ? new Date(school.timestamp.seconds * 1000).toLocaleDateString('ms-MY') : 'Just now'}</span></div>
+                                                </div>
+                                            ))
+                                        )
+                                    )}
+                                    {statusTab === 'unfilled' && (
+                                        availableSchools.length === 0 ? (
+                                            <div className="h-full flex flex-col items-center justify-center text-green-500 space-y-4"><Icon name="CheckCircle" className="w-16 h-16 opacity-80" /><div className="text-center"><p className="font-bold text-lg">Tahniah!</p><p className="text-sm opacity-80">Semua sekolah telah mendaftar.</p></div></div>
+                                        ) : (
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between mb-4"><p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Menunggu ({availableSchools.length})</p><div className="h-px bg-red-900/30 flex-1 ml-4"></div></div>
+                                                {availableSchools.map((school, idx) => (
+                                                    <div key={idx} className="bg-neutral-950/30 border border-neutral-800/50 p-3 rounded-lg flex items-center gap-3 hover:bg-neutral-900 hover:border-neutral-700 transition group cursor-default"><div className="w-1.5 h-1.5 rounded-full bg-red-500/50 group-hover:bg-red-500 transition"></div><span className="text-neutral-400 text-xs font-medium group-hover:text-neutral-200 transition">{school}</span></div>
+                                                ))}
+                                            </div>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="py-12 px-6 text-center">
+                        <div className="inline-block p-1 rounded-full bg-gradient-to-r from-neutral-800 to-neutral-900 border border-neutral-800 mb-8"><div className="px-6 py-2 bg-neutral-950 rounded-full flex items-center gap-2"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span className="text-xs font-bold uppercase tracking-widest text-neutral-400">Bantuan & Pertanyaan</span></div></div>
+                        <h3 className="text-white font-serif text-2xl mb-8">Hubungi Kami</h3>
+                        <div className="flex flex-col md:flex-row justify-center gap-6 md:gap-12 flex-wrap">
+                            <div className="flex flex-col items-center"><div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center mb-3 shadow-lg shadow-white/10"><Icon name="Phone" className="w-5 h-5" /></div><p className="text-white font-bold text-lg">Cikgu William</p><p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Pegawai Meja PIBG PPD Miri</p><a href="https://wa.me/60198050217" target="_blank" rel="noreferrer" className="text-neutral-300 hover:text-white transition font-mono border-b border-neutral-700 hover:border-white pb-0.5">+60 19-805 0217</a></div>
+                            <div className="hidden md:block w-px bg-neutral-800 h-24"></div>
+                            <div className="flex flex-col items-center"><div className="w-12 h-12 bg-neutral-800 text-white border border-neutral-700 rounded-full flex items-center justify-center mb-3"><Icon name="DollarSign" className="w-5 h-5" /></div><p className="text-white font-bold text-lg">Encik Aizudin</p><p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Bendahari Majlis</p><a href="https://wa.me/60109759190" target="_blank" rel="noreferrer" className="text-neutral-300 hover:text-white transition font-mono border-b border-neutral-700 hover:border-white pb-0.5">+60 10-975 9190</a></div>
+                        </div>
+                        <p className="text-neutral-600 text-xs mt-12">© 2026 Pejabat Pendidikan Daerah Miri. Hak Cipta Terpelihara.</p>
+                    </div>
+                </div>
+            );
         }
-      } catch (err) {
-        console.error("Auth error:", err);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
 
-  // 2. Fetch Data (Real-time Listener)
-  useEffect(() => {
-    if (!user) return;
-
-    const q = query(
-      collection(db, 'artifacts', appId, 'public', 'data', 'miri_dinner_rsvps')
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      data.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-      setRegisteredSchools(data);
-    }, (err) => {
-      console.error("Error fetching data:", err);
-      // Jika error permission, mungkin perlu setup Firestore Rules di console Firebase
-      if (err.code === 'permission-denied') {
-          setError('Ralat izin (Permission Denied). Sila semak Firestore Rules anda.');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // 3. Countdown Logic
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const deadline = new Date("2026-01-31T23:59:59");
-      const now = new Date();
-      const difference = deadline - now;
-      
-      if (difference > 0) {
-        const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
-        setDaysLeft(days);
-      } else {
-        setDaysLeft(0);
-      }
-    };
-
-    calculateTimeLeft();
-    const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
-    return () => clearInterval(timer);
-  }, []);
-
-  // 3. Filter Available Schools
-  const availableSchools = useMemo(() => {
-    const registeredNames = new Set(registeredSchools.map(r => r.schoolName));
-    return SCHOOL_LIST.filter(school => !registeredNames.has(school));
-  }, [registeredSchools]);
-
-  // --- Handlers ---
-
-  const handleAddAttendee = () => {
-    setAttendees([...attendees, { name: '', position: '' }]);
-  };
-
-  const handleRemoveAttendee = (index) => {
-    const newAttendees = [...attendees];
-    newAttendees.splice(index, 1);
-    setAttendees(newAttendees);
-  };
-
-  const handleDataChange = (index, field, value) => {
-    const newAttendees = [...attendees];
-    const val = field === 'name' ? value.toUpperCase() : value;
-    newAttendees[index] = { ...newAttendees[index], [field]: val };
-    setAttendees(newAttendees);
-  };
-
-  const calculateValidAttendees = () => {
-    return attendees.filter(p => p.name.trim() !== '');
-  };
-
-  const calculateTotal = () => {
-    return calculateValidAttendees().length * 100;
-  };
-
-  const handleCopyBank = () => {
-    navigator.clipboard.writeText('1102263680');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    // Validation
-    if (!schoolName.trim()) {
-      setError('Sila pilih nama sekolah.');
-      setLoading(false);
-      return;
-    }
-
-    if (!contactName.trim() || !contactNumber.trim()) {
-      setError('Sila lengkapkan maklumat Pegawai Perhubungan (PIC).');
-      setLoading(false);
-      return;
-    }
-
-    const validAttendees = calculateValidAttendees();
-
-    if (validAttendees.length < 3) {
-      setError('Minimum kehadiran adalah 3 orang.');
-      setLoading(false);
-      return;
-    }
-
-    const missingPosition = validAttendees.some(p => !p.position);
-    if (missingPosition) {
-      setError('Sila pilih jawatan untuk setiap peserta yang hadir.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Save last used school name for the receipt message link
-      const submittedSchoolName = schoolName.trim();
-
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'miri_dinner_rsvps'), {
-        schoolName: submittedSchoolName,
-        contactName: contactName.trim().toUpperCase(),
-        contactNumber: contactNumber.trim(),
-        attendees: validAttendees,
-        totalAmount: validAttendees.length * 100,
-        timestamp: serverTimestamp(),
-        userId: user.uid
-      });
-
-      setSuccess(true);
-      // We keep schoolName state active briefly for the WhatsApp link before clearing in "Daftar Lagi"
-    } catch (err) {
-      console.error("Error submitting:", err);
-      setError('Ralat semasa menghantar. Sila cuba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = () => {
-    setSuccess(false);
-    setSchoolName('');
-    setContactName('');
-    setContactNumber('');
-    setAttendees(Array(10).fill(null).map(() => ({ name: '', position: '' })));
-  };
-
-  // --- UI Components ---
-
-  return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-white selection:text-black pb-12">
-      
-      {/* Header / Hero Section - Enhanced Design */}
-      <div className="relative overflow-hidden bg-white text-black py-20 px-6 text-center shadow-2xl">
-        
-        {/* Abstract Sophisticated Background */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
-            <div className="absolute top-[-50%] left-[-20%] w-[80%] h-[80%] rounded-full bg-gradient-to-r from-yellow-200/50 to-yellow-500/30 blur-3xl"></div>
-            <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-100/50 blur-3xl"></div>
-            <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        </div>
-
-        {/* Countdown Banner */}
-        <div className="relative z-20 mb-8 inline-block animate-fade-in-down">
-          <div className="bg-neutral-900 text-white px-6 py-2 rounded-full shadow-xl flex items-center gap-3 border border-neutral-700">
-            <div className="bg-red-500 rounded-full p-1 animate-pulse">
-                <Hourglass className="w-3 h-3 text-white" />
-            </div>
-            <span className="text-sm font-bold tracking-wide uppercase">
-              Tarikh Tutup: <span className="text-yellow-400">31 JAN 2026</span>
-            </span>
-            <div className="w-px h-4 bg-neutral-700"></div>
-            <span className="text-sm font-mono text-red-300 font-bold">
-              {daysLeft > 0 ? `${daysLeft} Hari Lagi` : 'Tamat Tempoh'}
-            </span>
-          </div>
-        </div>
-
-        <div className="max-w-5xl mx-auto relative z-10">
-          <div className="inline-block mb-6">
-            <h2 className="text-sm font-bold tracking-[0.4em] uppercase text-neutral-500 border-b border-neutral-300 pb-2">Jemputan Rasmi</h2>
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-4 tracking-tight text-neutral-900 leading-tight drop-shadow-sm">
-            MAJLIS JALINAN KASIH<br/>
-            <span className="text-4xl md:text-5xl text-neutral-800">PIBG DAERAH MIRI 2026</span>
-          </h1>
-
-          {/* New Theme Slogan Badge */}
-          <div className="mb-6 animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 py-3 px-8 rounded-full bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white shadow-xl border border-neutral-700 transform hover:scale-105 transition duration-300">
-               <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-               <span className="text-lg md:text-xl font-medium tracking-wide italic">"Muafakat PIBG, Kekuatan Pendidikan"</span>
-               <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-            </div>
-          </div>
-
-          {/* Harapan Message */}
-          <p className="max-w-2xl mx-auto text-neutral-600 italic mb-10 font-serif text-lg leading-relaxed">
-            "Besar harapan kami agar setiap pihak dapat hadir sebagai tanda sokongan yang tidak berbelah bahagi kepada usaha murni ini."
-          </p>
-          
-          {/* VIP Section - Card Style */}
-          <div className="mb-12 relative bg-white/60 backdrop-blur-md p-8 rounded-2xl border border-white/50 inline-block w-full max-w-2xl mx-auto shadow-lg">
-            <span className="block text-xs font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3">Disempurnakan Oleh</span>
-            <p className="text-2xl md:text-4xl font-serif font-bold text-neutral-900 mb-1">Puan Mariam Haji Monek</p>
-            <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto my-3"></div>
-            <p className="text-sm text-neutral-700 font-semibold uppercase tracking-widest">Pegawai Pendidikan Daerah<br/>Pejabat Pendidikan Daerah Miri</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto text-sm md:text-base font-medium text-neutral-700">
-            <div className="flex flex-col items-center p-4 bg-white/50 rounded-lg border border-neutral-100 shadow-sm hover:shadow-md transition">
-              <Calendar className="w-6 h-6 mb-2 text-neutral-900" />
-              <span className="font-bold">13 Februari (Jumaat)</span>
-            </div>
-            <div className="flex flex-col items-center p-4 bg-white/50 rounded-lg border border-neutral-100 shadow-sm hover:shadow-md transition">
-              <Clock className="w-6 h-6 mb-2 text-neutral-900" />
-              <span className="font-bold">7.00 PM - 10.00 PM</span>
-            </div>
-            <div className="flex flex-col items-center p-4 bg-white/50 rounded-lg border border-neutral-100 shadow-sm hover:shadow-md transition">
-              <MapPin className="w-6 h-6 mb-2 text-neutral-900" />
-              <span className="font-bold">Imperial Palace Hotel</span>
-            </div>
-          </div>
-          
-          {/* INFO & GIFT EXCHANGE ROW - REDESIGNED */}
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto text-left">
-              
-              {/* Card 1: Dress Code */}
-              <div className="p-6 bg-neutral-900 text-white rounded-2xl shadow-xl border border-neutral-800 flex items-start gap-4">
-                  <div className="bg-white text-black p-3 rounded-full shrink-0">
-                       <User className="w-6 h-6" />
-                  </div>
-                  <div>
-                       <h4 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-1">Tema Pakaian</h4>
-                       <p className="text-xl font-serif font-bold mb-2">Hitam & Putih</p>
-                       <p className="text-xs text-neutral-400 leading-relaxed">
-                          Menampilkan kesatuan dan keanggunan dalam kesederhanaan.
-                       </p>
-                  </div>
-              </div>
-
-              {/* Card 2: Gift Exchange (Redesigned) */}
-              <div className="p-6 bg-gradient-to-br from-yellow-500 to-amber-600 text-black rounded-2xl shadow-xl flex items-start gap-4 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 transform group-hover:scale-110 transition">
-                       <Gift className="w-24 h-24" />
-                  </div>
-                  <div className="bg-black/10 p-3 rounded-full shrink-0 z-10">
-                       <Gift className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="z-10">
-                       <h4 className="text-sm font-bold uppercase tracking-widest text-black/60 mb-1">Aktiviti Khas YDP</h4>
-                       <p className="text-xl font-serif font-bold mb-2 text-white">Pertukaran Hadiah</p>
-                       <p className="text-xs font-medium text-black/80 leading-relaxed mb-1">
-                          <span className="font-bold">Syarat:</span> Bawa hadiah bernilai min. <span className="font-bold text-white bg-black/20 px-1 rounded">RM30.00</span>
-                       </p>
-                       <p className="text-[10px] text-white/90 italic leading-tight mt-2">
-                          *Bertujuan untuk mengeratkan silaturrahim dan ukhwah sesama kepimpinan PIBG sekolah-sekolah Daerah Miri.
-                       </p>
-                  </div>
-              </div>
-
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-        
-        {/* LEFT COLUMN: Registration Form (Spans 7 columns on large screens) */}
-        <div className="lg:col-span-7">
-          <div className="bg-neutral-900 border border-neutral-800 p-6 md:p-10 rounded-2xl shadow-2xl ring-1 ring-white/5">
-            <div className="flex items-center gap-4 mb-8 border-b border-neutral-800 pb-6">
-              <div className="bg-white text-black p-3 rounded-xl shadow-lg shadow-white/10">
-                <School className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">Pendaftaran Sekolah</h3>
-                <p className="text-neutral-400 text-sm">Sila isi maklumat kehadiran dengan lengkap.</p>
-              </div>
-            </div>
-
-            {success ? (
-              <div className="bg-green-900/20 border border-green-500/30 p-8 rounded-xl text-center animate-fade-in">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-900/30 rounded-full mb-6 ring-1 ring-green-500/50">
-                   <CheckCircle className="w-10 h-10 text-green-400" />
-                </div>
-                <h4 className="text-2xl font-bold text-white mb-2">Pendaftaran Berjaya!</h4>
-                <p className="text-neutral-300 mb-8">Terima kasih. Nama sekolah anda telah dimasukkan ke dalam senarai kehadiran rasmi.</p>
-                
-                {/* WHATSAPP ACTION BUTTON */}
-                <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 text-left mb-8 relative overflow-hidden">
-                   <div className="absolute right-0 top-0 p-4 opacity-5">
-                      <MessageCircle className="w-32 h-32 text-green-500" />
-                   </div>
-                   <h5 className="font-bold text-yellow-400 mb-3 flex items-center gap-2 text-lg relative z-10">
-                      <AlertCircle className="w-5 h-5" /> Tindakan Seterusnya
-                   </h5>
-                   <p className="text-sm text-neutral-300 mb-5 relative z-10 leading-relaxed">
-                     Sila buat pembayaran ke akaun <strong>PPD CLUB (1102263680)</strong> dan <strong>WAJIB</strong> hantar resit kepada Encik Aizudin untuk pengesahan tempat.
-                   </p>
-                   
-                   <a 
-                     href={`https://wa.me/60109759190?text=Salam%20Encik%20Aizudin,%20berikut%20adalah%20resit%20pembayaran%20untuk%20${encodeURIComponent(schoolName)}%20bagi%20Majlis%20Jalinan%20Kasih%20PIBG.`}
-                     target="_blank"
-                     rel="noreferrer"
-                     className="relative z-10 block w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-center flex items-center justify-center gap-3 transition shadow-lg hover:shadow-green-500/20 group"
-                   >
-                     <MessageCircle className="w-6 h-6 fill-current" />
-                     <span>Hantar Resit Sekarang (WhatsApp)</span>
-                   </a>
-                   <p className="text-[10px] text-center mt-3 text-neutral-500">Pautan ini akan membuka WhatsApp Encik Aizudin secara terus.</p>
-                </div>
-
-                <button 
-                  onClick={handleReset}
-                  className="px-8 py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition shadow-lg shadow-white/5"
-                >
-                  Daftar Sekolah Lain
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-8">
-                
-                {/* School Name Input */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-400 ml-1">
-                    Nama Sekolah
-                  </label>
-                  <div className="relative group">
-                    <select
-                      value={schoolName}
-                      onChange={(e) => setSchoolName(e.target.value)}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-white focus:ring-1 focus:ring-white outline-none transition appearance-none cursor-pointer group-hover:border-neutral-600 shadow-inner"
-                    >
-                      <option value="" className="bg-neutral-900 text-white">-- Sila Pilih Sekolah --</option>
-                      {availableSchools.map((school) => (
-                        <option key={school} value={school} className="bg-neutral-900 text-white">{school}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400 pointer-events-none group-hover:text-white transition" />
-                  </div>
-                  {availableSchools.length === 0 && (
-                    <p className="text-xs text-yellow-500 mt-2 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Semua sekolah telah mendaftar.</p>
-                  )}
-                </div>
-
-                {/* Contact Person Details */}
-                <div className="bg-neutral-950/50 p-6 rounded-xl border border-neutral-800/50 space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-neutral-800/50">
-                    <Phone className="w-4 h-4 text-neutral-400" />
-                    <label className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                      Maklumat Pegawai Perhubungan (PIC)
-                    </label>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] uppercase text-neutral-500 ml-1">Nama PIC</label>
-                      <input
-                        type="text"
-                        value={contactName}
-                        onChange={(e) => setContactName(e.target.value.toUpperCase())}
-                        placeholder="NAMA PENUH (HURUF BESAR)"
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-white outline-none text-sm placeholder-neutral-600 uppercase focus:bg-neutral-800 transition"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] uppercase text-neutral-500 ml-1">No. Telefon</label>
-                      <input
-                        type="tel"
-                        value={contactNumber}
-                        onChange={(e) => setContactNumber(e.target.value)}
-                        placeholder="Cth: 0123456789"
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-white outline-none text-sm placeholder-neutral-600 focus:bg-neutral-800 transition"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Attendees List */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <label className="text-xs font-bold uppercase tracking-wider text-neutral-400 ml-1">
-                      Senarai Peserta
-                    </label>
-                    <div className="flex items-center gap-2 text-xs bg-neutral-800 px-3 py-1 rounded-full border border-neutral-700">
-                        <span className="text-neutral-400">Syarat:</span>
-                        <span className="text-white font-bold">Min. 3 Orang</span>
-                        <span className="text-neutral-600">|</span>
-                        <span className="text-white font-bold">RM100/pax</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {attendees.map((person, index) => (
-                      <div key={index} className="flex flex-col sm:flex-row gap-3 p-4 bg-neutral-950 border border-neutral-800 rounded-xl hover:border-neutral-700 transition group">
-                        <span className="flex items-center justify-center w-6 h-6 bg-neutral-900 rounded-full text-neutral-500 font-mono text-xs shrink-0 border border-neutral-800 group-hover:border-neutral-600 group-hover:text-neutral-300 transition">
-                          {index + 1}
-                        </span>
-                        
-                        {/* Name Input */}
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            value={person.name}
-                            onChange={(e) => handleDataChange(index, 'name', e.target.value)}
-                            placeholder="NAMA PENUH PESERTA"
-                            className="w-full bg-transparent border-b border-neutral-800 p-1 text-white focus:border-white outline-none text-sm placeholder-neutral-700 uppercase transition"
-                          />
-                        </div>
-
-                        {/* Position Dropdown */}
-                        <div className="w-full sm:w-48 relative">
-                           <select
-                              value={person.position}
-                              onChange={(e) => handleDataChange(index, 'position', e.target.value)}
-                              className={`w-full bg-neutral-900/50 border border-neutral-800 rounded-lg p-2 pl-3 focus:border-white outline-none text-xs appearance-none cursor-pointer ${person.position ? 'text-white' : 'text-neutral-500'}`}
-                            >
-                              <option value="" className="bg-neutral-900 text-white">Pilih Jawatan...</option>
-                              {POSITION_LIST.map(pos => (
-                                <option key={pos} value={pos} className="bg-neutral-900 text-white">{pos}</option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-500 pointer-events-none" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddAttendee}
-                    className="mt-2 w-full py-3 border border-dashed border-neutral-700 text-neutral-400 hover:text-white hover:border-white hover:bg-neutral-800 rounded-xl transition flex items-center justify-center gap-2 text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4" /> Tambah Slot Peserta
-                  </button>
-                </div>
-
-                {/* Summary & Payment & Submit */}
-                <div className="pt-8 border-t border-neutral-800">
-                  <div className="flex justify-between items-center mb-6 bg-neutral-950 p-6 rounded-xl border border-neutral-800">
-                    <span className="text-neutral-400 font-medium">Jumlah Bayaran Perlu</span>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-white tracking-tight">RM {calculateTotal()}</p>
-                      <p className="text-xs text-neutral-500 mt-1 font-mono">{calculateValidAttendees().length} orang x RM100.00</p>
-                    </div>
-                  </div>
-
-                  {/* Payment Details Section */}
-                  <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-xl mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <CreditCard className="w-24 h-24 text-white" />
-                    </div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-400 mb-5 flex items-center gap-2 relative z-10">
-                      <DollarSign className="w-4 h-4 text-yellow-500" /> Maklumat Pembayaran
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 text-sm relative z-10">
-                      <div className="flex justify-between items-center border-b border-neutral-800 pb-3 border-dashed">
-                        <span className="text-neutral-500">Bank</span>
-                        <span className="text-white font-medium uppercase font-mono tracking-wide">BANK KERJASAMA RAKYAT</span>
-                      </div>
-                      <div className="flex justify-between items-center border-b border-neutral-800 pb-3 border-dashed">
-                        <span className="text-neutral-500">Nama Akaun</span>
-                        <span className="text-white font-bold uppercase tracking-wider">PPD CLUB</span>
-                      </div>
-                       <div className="flex justify-between items-center border-b border-neutral-800 pb-3 border-dashed">
-                        <span className="text-neutral-500">Jenis Akaun</span>
-                        <span className="text-white font-medium uppercase text-xs bg-neutral-800 px-2 py-1 rounded">AKAUN SEMASA</span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="text-neutral-500">No. Akaun</span>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xl md:text-2xl font-mono font-bold text-yellow-400 tracking-wider">1102263680</span>
-                            <button 
-                                type="button"
-                                onClick={handleCopyBank}
-                                className="flex items-center gap-1 text-[10px] bg-neutral-800 hover:bg-white hover:text-black text-neutral-300 px-3 py-1.5 rounded transition uppercase font-bold tracking-wider"
-                            >
-                                {copied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                {copied ? 'Disalin' : 'Salin'}
-                            </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-5 p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-200 flex gap-3 items-start">
-                        <div className="shrink-0 mt-0.5 bg-blue-500/20 p-1 rounded-full"><div className="w-1 h-1 bg-blue-400 rounded-full"></div></div>
-                        <p className="leading-relaxed">Sila buat pembayaran ke akaun di atas. Simpan resit transaksi anda sebagai bukti pembayaran untuk rujukan pihak penganjur kelak.</p>
-                    </div>
-                  </div>
-
-                  {/* IMPORTANT WARNING BOX */}
-                  <div className="bg-yellow-900/20 border border-yellow-700/30 p-4 rounded-xl mb-8 flex gap-3 text-left">
-                    <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-                    <div>
-                        <h5 className="font-bold text-yellow-500 text-sm mb-1 uppercase tracking-wider">Peringatan Penting</h5>
-                        <p className="text-xs text-yellow-200/70 leading-relaxed">
-                            Bayaran penyertaan hendaklah menggunakan <strong>duit peribadi (duit masing-masing)</strong>. Pihak penganjur <strong>TIDAK MENGGALAKKAN</strong> penggunaan duit tabung PIBG sekolah untuk tujuan ini.
-                        </p>
-                    </div>
-                  </div>
-
-                  {error && (
-                    <div className="mb-6 bg-red-900/20 border border-red-900/50 p-4 rounded-lg flex items-center gap-3 text-red-400 text-sm">
-                        <XCircle className="w-5 h-5 shrink-0" />
-                        {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-white text-black font-bold py-5 rounded-xl hover:bg-neutral-200 transition transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                  >
-                    {loading ? (
-                        <>Sedang Memproses...</>
-                    ) : (
-                        <>SAHKAN KEHADIRAN & HANTAR <CheckCircle className="w-5 h-5" /></>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Status Board (Spans 5 columns) */}
-        <div className="lg:col-span-5 flex flex-col h-full min-h-[600px]">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl flex-1 overflow-hidden flex flex-col ring-1 ring-white/5">
-            <div className="p-6 pb-0 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur z-10 sticky top-0">
-              <div className="flex items-center gap-3 mb-6">
-                 <div className="p-2 bg-neutral-800 rounded-lg">
-                    <Users className="w-5 h-5 text-white" />
-                 </div>
-                 <div>
-                    <h3 className="text-lg font-bold text-white">Status Terkini</h3>
-                    <p className="text-xs text-neutral-500">Kemaskini Langsung (Real-time)</p>
-                 </div>
-              </div>
-              
-              {/* TABS Navigation */}
-              <div className="flex p-1 bg-neutral-950 rounded-lg mb-6 border border-neutral-800">
-                <button 
-                  onClick={() => setStatusTab('filled')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
-                    statusTab === 'filled' 
-                      ? 'bg-neutral-800 text-white shadow-sm' 
-                      : 'text-neutral-500 hover:text-neutral-300'
-                  }`}
-                >
-                  Sudah Isi <span className="ml-1 opacity-60">({registeredSchools.length})</span>
-                </button>
-                <button 
-                  onClick={() => setStatusTab('unfilled')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
-                    statusTab === 'unfilled' 
-                      ? 'bg-red-900/20 text-red-400 shadow-sm border border-red-900/30' 
-                      : 'text-neutral-500 hover:text-neutral-300'
-                  }`}
-                >
-                  Belum Isi <span className="ml-1 opacity-60">({availableSchools.length})</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar bg-neutral-900">
-              
-              {/* CONTENT: FILLED */}
-              {statusTab === 'filled' && (
-                registeredSchools.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-neutral-600 space-y-4 opacity-60">
-                    <School className="w-16 h-16 stroke-1" />
-                    <div className="text-center">
-                        <p className="font-medium">Belum ada sekolah mendaftar.</p>
-                        <p className="text-xs mt-1">Jadilah yang pertama!</p>
-                    </div>
-                  </div>
-                ) : (
-                  registeredSchools.map((school) => (
-                    <div key={school.id} className="bg-neutral-950 border border-neutral-800 p-5 rounded-xl hover:border-neutral-600 transition group animate-fade-in-up shadow-sm">
-                      <div className="flex justify-between items-start mb-3">
-                        <h4 className="font-bold text-base text-white group-hover:text-blue-300 transition leading-tight w-[70%]">{school.schoolName}</h4>
-                        <span className="bg-neutral-800 text-white border border-neutral-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                          {school.attendees.length} Pax
-                        </span>
-                      </div>
-                      
-                      {/* Contact Person Info in Status */}
-                      <div className="mb-4 text-[10px] text-neutral-400 flex items-center gap-2 bg-neutral-900/50 p-2 rounded border border-neutral-800/50">
-                        <Phone className="w-3 h-3 text-neutral-500" />
-                        <span className="uppercase tracking-wide font-medium">{school.contactName} <span className="text-neutral-600">|</span> {school.contactNumber}</span>
-                      </div>
-                      
-                      <div className="space-y-2 pl-3 border-l border-neutral-800 ml-1">
-                        {school.attendees.map((person, idx) => (
-                          <div key={idx} className="flex items-start justify-between text-xs group/item">
-                            <span className="flex items-center gap-2 text-neutral-300 uppercase w-[65%] truncate">
-                               <span className="w-1 h-1 bg-neutral-600 rounded-full shrink-0 group-hover/item:bg-white transition"></span>
-                               {person.name || person}
-                            </span>
-                            <span className="text-[10px] text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800 w-[30%] text-right truncate">
-                              {person.position || 'Peserta'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4 pt-3 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-500 font-mono">
-                        <span>Total: RM{school.totalAmount}</span>
-                        <span>{school.timestamp ? new Date(school.timestamp.seconds * 1000).toLocaleDateString('ms-MY') : 'Just now'}</span>
-                      </div>
-                    </div>
-                  ))
-                )
-              )}
-
-              {/* CONTENT: UNFILLED */}
-              {statusTab === 'unfilled' && (
-                availableSchools.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-green-500 space-y-4">
-                    <CheckCircle className="w-16 h-16 opacity-80" />
-                    <div className="text-center">
-                        <p className="font-bold text-lg">Tahniah!</p>
-                        <p className="text-sm opacity-80">Semua sekolah telah mendaftar.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between mb-4">
-                        <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Menunggu ({availableSchools.length})</p>
-                        <div className="h-px bg-red-900/30 flex-1 ml-4"></div>
-                    </div>
-                    {availableSchools.map((school, idx) => (
-                      <div key={idx} className="bg-neutral-950/30 border border-neutral-800/50 p-3 rounded-lg flex items-center gap-3 hover:bg-neutral-900 hover:border-neutral-700 transition group cursor-default">
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500/50 group-hover:bg-red-500 transition"></div>
-                        <span className="text-neutral-400 text-xs font-medium group-hover:text-neutral-200 transition">{school}</span>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer / Contact Section */}
-      <div className="py-12 px-6 text-center">
-        <div className="inline-block p-1 rounded-full bg-gradient-to-r from-neutral-800 to-neutral-900 border border-neutral-800 mb-8">
-           <div className="px-6 py-2 bg-neutral-950 rounded-full flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">Bantuan & Pertanyaan</span>
-           </div>
-        </div>
-        
-        <h3 className="text-white font-serif text-2xl mb-8">Hubungi Kami</h3>
-        
-        <div className="flex flex-col md:flex-row justify-center gap-6 md:gap-12 flex-wrap">
-           {/* Contact 1 */}
-           <div className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center mb-3 shadow-lg shadow-white/10">
-                 <Phone className="w-5 h-5" />
-              </div>
-              <p className="text-white font-bold text-lg">Cikgu William</p>
-              <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Pegawai Meja PIBG PPD Miri</p>
-              <a href="https://wa.me/60198050217" target="_blank" rel="noreferrer" className="text-neutral-300 hover:text-white transition font-mono border-b border-neutral-700 hover:border-white pb-0.5">
-                +60 19-805 0217
-              </a>
-           </div>
-
-           {/* Divider for mobile/desktop */}
-           <div className="hidden md:block w-px bg-neutral-800 h-24"></div>
-
-           {/* Contact 2 */}
-           <div className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-neutral-800 text-white border border-neutral-700 rounded-full flex items-center justify-center mb-3">
-                 <DollarSign className="w-5 h-5" />
-              </div>
-              <p className="text-white font-bold text-lg">Encik Aizudin</p>
-              <p className="text-neutral-500 text-xs uppercase tracking-wider mb-2">Bendahari Majlis</p>
-              <a href="https://wa.me/60109759190" target="_blank" rel="noreferrer" className="text-neutral-300 hover:text-white transition font-mono border-b border-neutral-700 hover:border-white pb-0.5">
-                +60 10-975 9190
-              </a>
-           </div>
-        </div>
-        
-        <p className="text-neutral-600 text-xs mt-12">
-          © 2026 Pejabat Pendidikan Daerah Miri. Hak Cipta Terpelihara.
-        </p>
-      </div>
-
-    </div>
-  );
-}
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MiriDinnerRSVP />);
+    </script>
+</body>
+</html>
